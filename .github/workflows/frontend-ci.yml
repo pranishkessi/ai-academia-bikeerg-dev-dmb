@@ -1,0 +1,54 @@
+name: Frontend CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend  # ✅ Applies to all `run:` steps in this job
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Linter (ESLint)
+        run: npx eslint . --config eslint.config.js
+
+      - name: Run Tests (Jest)
+        run: |
+          npm install jest
+          npm test
+
+  deploy:
+    needs: build-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Deploy Fullstack App (Docker)
+      run: |
+        echo "Deploying Fullstack App..."
+        docker build -t ai-academia-app .  # root is context
+        docker run -d -p 3000:3000 -p 8080:8080 ai-academia-app
