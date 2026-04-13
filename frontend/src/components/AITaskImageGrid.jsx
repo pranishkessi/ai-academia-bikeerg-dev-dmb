@@ -3,8 +3,10 @@ import { HStack, Box } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import { AI_TASKS } from "../constants/aiTasks";
+import { THEME_COLORS } from "../constants/themeColors";
 
-const segmentColors = ["#A0AEC0", "#63B3ED", "#F6AD55", "#48BB78", "#805AD5", "#E53E3E"];
+// const segmentColors = ["#A0AEC0", "#63B3ED", "#F6AD55", "#48BB78", "#805AD5", "#E53E3E"];
+const segmentColors = THEME_COLORS.taskBorders;
 
 // Phase 6: use all 6 tasks
 const TASKS = AI_TASKS;

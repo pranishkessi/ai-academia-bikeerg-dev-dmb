@@ -40,8 +40,8 @@ export const AI_TASKS = [
     shortLabel: "Bild mit KI erstellt",
     label: "Du hast ein Bild mit KI erstellt",
     threshold: 0.01,
-    lockedImg: "/MYSTERY_4.4.png",
-    unlockedImg: "/Unlocked_4.png",
+    lockedImg: "/MYSTERY_5.5.png",
+    unlockedImg: "/Unlocked_6.png",
     warningOnly: false,
   },
   {
@@ -49,8 +49,8 @@ export const AI_TASKS = [
     shortLabel: "5 Sekunden KI-Video",
     label: "Streng Dich an, in einer Stunde hast Du 5 Sekunden Video mit KI erstellt wenn Du konstant mit 100 Watt trittst",
     threshold: 0.5,
-    lockedImg: "/MYSTERY_4.4.png",
-    unlockedImg: "/Unlocked_4.png",
+    lockedImg: "/MYSTERY_6.6.png",
+    unlockedImg: "/Unlocked_6.png",
     warningOnly: false,
   },
 ];

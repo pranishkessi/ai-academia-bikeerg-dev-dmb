@@ -35,6 +35,7 @@ import {
   LEVEL6_WARNING_DELAY_MS,
   LEVEL6_WARNING_TEXT,
 } from "../constants/aiTasks";
+import { THEME_COLORS } from "../constants/themeColors";
 
 const ACTIVE_TASKS = AI_TASKS;
 
@@ -169,7 +170,6 @@ function DashboardLayout({ metrics, onStart, onStop, sessionActive }) {
     return () => clearInterval(idleTickerRef.current);
   }, [sessionActive, idleCountdown, overrideMessage]);
 
-  // Delayed level-6 warning after level 5 is reached
   useEffect(() => {
     if (!sessionActive) return;
 
@@ -262,7 +262,7 @@ function DashboardLayout({ metrics, onStart, onStop, sessionActive }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   return (
-    <VStack spacing={3} w="100vw" h="100vh" p={3} bg="#cbdfe6" overflow="hidden">
+    <VStack spacing={3} w="100vw" h="100vh" p={3} bg={THEME_COLORS.pageBg} overflow="hidden">
       <Grid templateColumns="220px repeat(6, 1fr) 40px" gap={3} w="100%">
         <GridItem>
           <VStack spacing={3} align="start">
@@ -270,27 +270,27 @@ function DashboardLayout({ metrics, onStart, onStop, sessionActive }) {
               <Button
                 onClick={onStart}
                 isDisabled={sessionActive}
-                bg="green.500"
+                bg="#D97706"
                 color="white"
                 borderRadius="full"
                 height="84px"
                 width="84px"
                 fontSize="sm"
                 fontWeight="bold"
-                _hover={{ bg: "green.600" }}
+                _hover={{ bg: "#B45309" }}
               >
                 START
               </Button>
               <Button
                 onClick={() => onStop && onStop({ reason: "manual" })}
-                bg="red.500"
+                bg="#EA580C"
                 color="white"
                 borderRadius="full"
                 height="84px"
                 width="84px"
                 fontSize="sm"
                 fontWeight="bold"
-                _hover={{ bg: "red.600" }}
+                _hover={{ bg: "#C2410C" }}
               >
                 STOP
               </Button>
@@ -300,6 +300,11 @@ function DashboardLayout({ metrics, onStart, onStop, sessionActive }) {
                 icon={<FaInfoCircle />}
                 onClick={onOpen}
                 size="sm"
+                bg={THEME_COLORS.cardBg}
+                color={THEME_COLORS.text}
+                borderWidth="1px"
+                borderColor={THEME_COLORS.border}
+                _hover={{ bg: THEME_COLORS.panelBgAlt }}
               />
             </HStack>
           </VStack>
@@ -314,7 +319,7 @@ function DashboardLayout({ metrics, onStart, onStop, sessionActive }) {
           {
             label: "Status",
             value: (
-              <Text color={metrics?.connected ? "green.500" : "red.500"}>
+              <Text color={metrics?.connected ? "#B45309" : "#C2410C"}>
                 {status}
               </Text>
             ),
@@ -323,19 +328,21 @@ function DashboardLayout({ metrics, onStart, onStop, sessionActive }) {
           <GridItem
             key={idx}
             p={1}
-            bg="white"
+            bg={THEME_COLORS.cardBg}
             borderRadius="md"
             textAlign="center"
-            boxShadow="sm"
+            boxShadow={THEME_COLORS.shadow}
+            borderWidth="1px"
+            borderColor={THEME_COLORS.border}
             display="flex"
             flexDirection="column"
             justifyContent="center"
             minH="84px"
           >
-            <Heading size="xs" color="gray.600">
+            <Heading size="xs" color={THEME_COLORS.textMuted}>
               {item.label}
             </Heading>
-            <Box mt={1} fontWeight="bold" fontSize="md">
+            <Box mt={1} fontWeight="bold" fontSize="md" color={THEME_COLORS.text}>
               {item.value}
             </Box>
           </GridItem>
@@ -349,9 +356,11 @@ function DashboardLayout({ metrics, onStart, onStop, sessionActive }) {
           <Grid templateColumns="1fr 1fr 1fr" gap={3} h="100%" minH={0}>
             <Flex
               p={3}
-              bg="#cae8eb"
+              bg={THEME_COLORS.panelBg}
               borderRadius="md"
-              boxShadow="md"
+              boxShadow={THEME_COLORS.shadow}
+              borderWidth="1px"
+              borderColor={THEME_COLORS.border}
               justify="center"
               align="center"
               minH={0}
@@ -362,9 +371,11 @@ function DashboardLayout({ metrics, onStart, onStop, sessionActive }) {
 
             <Flex
               p={3}
-              bg="#cae8eb"
+              bg={THEME_COLORS.panelBg}
               borderRadius="md"
-              boxShadow="md"
+              boxShadow={THEME_COLORS.shadow}
+              borderWidth="1px"
+              borderColor={THEME_COLORS.border}
               justify="center"
               align="center"
               minH={0}
@@ -375,16 +386,20 @@ function DashboardLayout({ metrics, onStart, onStop, sessionActive }) {
 
             <Box
               p={3}
-              bg="#cae8eb"
+              pr={4}
+              bg={THEME_COLORS.panelBg}
               borderRadius="md"
-              boxShadow="md"
+              boxShadow={THEME_COLORS.shadow}
+              borderWidth="1px"
+              borderColor={THEME_COLORS.border}
               h="100%"
               minH={0}
               display="flex"
               flexDirection="column"
-              justifyContent="flex-start"
+              justifyContent="center"
               alignItems="center"
               overflow="hidden"
+              boxSizing="border-box"
             >
               <AvatarDisplay message={overrideMessage || message} />
             </Box>
@@ -394,14 +409,18 @@ function DashboardLayout({ metrics, onStart, onStop, sessionActive }) {
         <GridItem minH={0}>
           <Flex
             p={2}
-            bg="#cae8eb"
+            pr={3}
+            bg={THEME_COLORS.panelBgAlt}
             borderRadius="md"
-            boxShadow="md"
+            boxShadow={THEME_COLORS.shadow}
+            borderWidth="1px"
+            borderColor={THEME_COLORS.border}
             h="100%"
             minH={0}
             align="center"
             justify="center"
             overflow="hidden"
+            boxSizing="border-box"
           >
             <AITaskImageGrid energy={energy} />
           </Flex>
@@ -412,12 +431,14 @@ function DashboardLayout({ metrics, onStart, onStop, sessionActive }) {
         templateColumns="repeat(4, 1fr)"
         gap={3}
         w="100%"
-        borderTop="1px solid #CBD5E0"
-        bg="white"
-        py={2}
-        px={4}
-        borderRadius="md"
-      >
+        bg="#FFF4E8"
+        py={3}
+        px={5}
+        borderRadius="xl"
+        borderWidth="1px"
+        borderColor="#E9B27A"
+        boxShadow="0 4px 12px rgba(191, 102, 22, 0.10)"
+>
         {[
           "/BMFTR_Logo2.png",
           "/INIT_Logo.png",
@@ -429,15 +450,16 @@ function DashboardLayout({ metrics, onStart, onStop, sessionActive }) {
             display="flex"
             justifyContent="center"
             alignItems="center"
+            minH="72px"
           >
-            <Image src={src} alt={`Logo ${idx + 1}`} maxH="68px" />
+            <Image src={src} alt={`Logo ${idx + 1}`} maxH="62px" objectFit="contain" />
           </Box>
         ))}
       </Grid>
 
       <Modal isOpen={isOpen} onClose={onClose} size="6xl">
         <ModalOverlay />
-        <ModalContent rounded="2xl" p={2}>
+        <ModalContent rounded="2xl" p={2} bg={THEME_COLORS.cardBg}>
           <ModalCloseButton />
           <ModalBody p={{ base: 4, md: 8 }}>
             <InstructionContent lang="de" />

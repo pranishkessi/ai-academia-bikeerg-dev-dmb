@@ -3,19 +3,11 @@ import { Box, Text } from "@chakra-ui/react";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
 import { AI_TASKS } from "../constants/aiTasks";
+import { THEME_COLORS } from "../constants/themeColors";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const ACTIVE_TASKS = AI_TASKS;
-
-const SEGMENT_COLORS = [
-  "#A0AEC0",
-  "#63B3ED",
-  "#F6AD55",
-  "#48BB78",
-  "#805AD5",
-  "#E53E3E",
-];
 
 function SpeedometerChart({ energy }) {
   const safeEnergy = Number(energy) || 0;
@@ -30,7 +22,7 @@ function SpeedometerChart({ energy }) {
   }, [segmentCount]);
 
   const backgroundColors = useMemo(() => {
-    return SEGMENT_COLORS.slice(0, segmentCount);
+    return THEME_COLORS.speedometerSegments.slice(0, segmentCount);
   }, [segmentCount]);
 
   const progressValue = useMemo(() => {
@@ -87,7 +79,6 @@ function SpeedometerChart({ energy }) {
     const filled = progressSlices.map((slice) => slice.size);
     const totalFilled = filled.reduce((sum, value) => sum + value, 0);
     const leftover = Math.max(100 - totalFilled, 0);
-
     return leftover > 0 ? [...filled, leftover] : filled;
   }, [progressSlices]);
 
@@ -181,6 +172,7 @@ function SpeedometerChart({ energy }) {
         fontSize="md"
         fontWeight="bold"
         lineHeight="1.2"
+        color={THEME_COLORS.text}
       >
         {safeEnergy.toFixed(4)} kWh
       </Text>

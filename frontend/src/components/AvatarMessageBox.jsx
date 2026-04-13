@@ -2,20 +2,14 @@
 import React from "react";
 import { Box, Text } from "@chakra-ui/react";
 import { SlideFade } from "@chakra-ui/react";
+import { THEME_COLORS } from "../constants/themeColors";
 
-/**
- * Unified message box for ALL messages above the avatar.
- * Props:
- *  - text: string
- *  - kind?: "default" | "success" | "warning" | "info" | "unlock"
- *  - show?: boolean
- */
 const kindStyles = {
-  default: { bg: "white", color: "gray.800", borderColor: "gray.200" },
-  success: { bg: "green.50", color: "green.800", borderColor: "green.200" },
-  warning: { bg: "yellow.50", color: "yellow.900", borderColor: "yellow.200" },
-  info:    { bg: "blue.50", color: "blue.900", borderColor: "blue.200" },
-  unlock:  { bg: "purple.50", color: "purple.900", borderColor: "purple.200" },
+  default: THEME_COLORS.message.default,
+  success: THEME_COLORS.message.success,
+  warning: THEME_COLORS.message.warning,
+  info: THEME_COLORS.message.info,
+  unlock: THEME_COLORS.message.unlock,
 };
 
 export default function AvatarMessageBox({ text, kind = "default", show = true }) {
@@ -28,17 +22,22 @@ export default function AvatarMessageBox({ text, kind = "default", show = true }
         aria-live="polite"
         px={6}
         py={4}
-        maxW="96%"
+        maxW="92%"
         borderRadius="xl"
-        boxShadow="xl"
-        borderWidth="1px"
+        boxShadow="lg"
+        borderWidth="2px"
         textAlign="center"
         mx="auto"
         bg={s.bg}
         color={s.color}
         borderColor={s.borderColor}
       >
-        <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold" lineHeight="short" whiteSpace="pre-line">
+        <Text
+          fontSize={{ base: "xl", md: "2xl" }}
+          fontWeight="bold"
+          lineHeight="short"
+          whiteSpace="pre-line"
+        >
           {text}
         </Text>
       </Box>
