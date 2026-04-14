@@ -28,15 +28,45 @@ os.makedirs(LOG_DIR, exist_ok=True)
 
 SIM_MODE = os.getenv("SIM_MODE", "0") == "1"
 
-# Updated 6-task model for logs / snapshots
-THRESHOLDS = [0.0017, 0.003, 0.0045, 0.006, 0.01, 0.5]
-TASK_LABELS = [
-    "Computer eingeschaltet",
-    "10 Google-Suchanfragen",
-    "1.000 Zeichen übersetzt",
-    "2 ChatGPT-Fragen",
-    "Bild mit KI erstellt",
-    "5 Sekunden KI-Video",
+# Stage 1 sync improvement:
+# keep one backend task structure instead of parallel arrays
+AI_TASKS = [
+    {
+        "id": "level1",
+        "shortLabel": "Computer eingeschaltet",
+        "label": "Du hast den Computer eingeschaltet",
+        "threshold": 0.0017,
+    },
+    {
+        "id": "level2",
+        "shortLabel": "10 Google-Suchanfragen",
+        "label": "Du hast 10 Suchanfragen bei Google geschafft",
+        "threshold": 0.003,
+    },
+    {
+        "id": "level3",
+        "shortLabel": "1.000 Zeichen übersetzt",
+        "label": "Du hast 1.000 Zeichen Text mit KI übersetzt",
+        "threshold": 0.0045,
+    },
+    {
+        "id": "level4",
+        "shortLabel": "2 ChatGPT-Fragen",
+        "label": "Du hast 2 Fragen an ChatGPT geschafft",
+        "threshold": 0.006,
+    },
+    {
+        "id": "level5",
+        "shortLabel": "Bild mit KI erstellt",
+        "label": "Du hast ein Bild mit KI erstellt",
+        "threshold": 0.01,
+    },
+    {
+        "id": "level6",
+        "shortLabel": "5 Sekunden KI-Video",
+        "label": "Streng Dich an, in einer Stunde hast Du 5 Sekunden Video mit KI erstellt wenn Du konstant mit 100 Watt trittst",
+        "threshold": 0.5,
+    },
 ]
 
 
@@ -44,8 +74,22 @@ def log_session_to_file(snapshot):
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     filename = os.path.join(LOG_DIR, f"session_{timestamp}.json")
     with open(filename, "w") as f:
-        json.dump(snapshot, f, indent=2)
+        json.dump(snapshot, f, indent=2, ensure_ascii=False)
     print(f"📄 Session saved to {filename}")
+
+
+def get_energy_values():
+    raw_energy = float(ble_state.get("energy_kwh", 0.0))
+    return raw_energy, round(raw_energy, 4)
+
+
+def get_unlocked_tasks(raw_energy: float):
+    return [task for task in AI_TASKS if raw_energy >= task["threshold"]]
+
+
+def get_current_level(raw_energy: float):
+    unlocked = get_unlocked_tasks(raw_energy)
+    return len(unlocked)
 
 
 app.add_middleware(
@@ -76,16 +120,33 @@ def read_root():
 
 @app.get("/data")
 def get_data():
+    session_active = ble_state.get("session_active", False)
+    raw_energy, display_energy = get_energy_values()
+
+    if not session_active:
+        raw_energy = 0.0
+        display_energy = 0.0
+
+    unlocked_tasks = get_unlocked_tasks(raw_energy)
+    current_level = len(unlocked_tasks)
+
     return {
-        "power_watts": ble_state.get("power", 0) if ble_state.get("session_active") else 0,
-        "stroke_rate": int(ble_state.get("cadence", 0)) if ble_state.get("session_active") else 0,
-        "distance_meters": int(ble_state.get("distance", 0)) if ble_state.get("session_active") else 0,
-        "elapsed_time": int(ble_state.get("elapsed", 0)) if ble_state.get("session_active") else 0,
-        "energy_kwh": round(ble_state.get("energy_kwh", 0.0), 4) if ble_state.get("session_active") else 0.0,
-        "session_active": ble_state.get("session_active", False),
+        "power_watts": ble_state.get("power", 0) if session_active else 0,
+        "stroke_rate": int(ble_state.get("cadence", 0)) if session_active else 0,
+        "distance_meters": int(ble_state.get("distance", 0)) if session_active else 0,
+        "elapsed_time": int(ble_state.get("elapsed", 0)) if session_active else 0,
+        # raw value for logic
+        "energy_kwh": raw_energy,
+        # rounded value for display/debug convenience
+        "energy_kwh_display": display_energy,
+        "session_active": session_active,
         "connected": ble_state.get("connected", False),
         "last_session_snapshot": last_session_snapshot,
         "sim_mode": SIM_MODE,
+        # Stage 1 backend sync/debug metadata
+        "unlocked_count": current_level,
+        "current_level": current_level,
+        "ai_tasks": AI_TASKS,
     }
 
 
@@ -98,15 +159,27 @@ async def start_session():
 
 @app.post("/stop")
 async def stop_session():
-    energy = ble_state.get("energy_kwh", 0.0)
-    unlocked_tasks = [label for t, label in zip(THRESHOLDS, TASK_LABELS) if energy >= t]
+    raw_energy, display_energy = get_energy_values()
+    unlocked_tasks = get_unlocked_tasks(raw_energy)
 
     last_session_snapshot.clear()
     last_session_snapshot.update({
         "elapsed_time": int(ble_state.get("elapsed", 0)),
         "distance_meters": int(ble_state.get("distance", 0)),
-        "energy_kwh": round(energy, 4),
-        "tasks_unlocked": unlocked_tasks,
+        "energy_kwh": raw_energy,
+        "energy_kwh_display": display_energy,
+        "tasks_unlocked": [task["shortLabel"] for task in unlocked_tasks],
+        "tasks_unlocked_details": [
+            {
+                "id": task["id"],
+                "shortLabel": task["shortLabel"],
+                "label": task["label"],
+                "threshold": task["threshold"],
+            }
+            for task in unlocked_tasks
+        ],
+        "unlocked_count": len(unlocked_tasks),
+        "current_level": len(unlocked_tasks),
         "sim_mode": SIM_MODE,
         "stopped_at": datetime.now().isoformat(),
     })
@@ -137,10 +210,15 @@ def ensure_sim_mode():
 @app.get("/test/status")
 def test_status():
     ensure_sim_mode()
+    raw_energy, display_energy = get_energy_values()
+
     return {
         "sim_mode": SIM_MODE,
         "session_active": ble_state.get("session_active", False),
         "ble_state": ble_state,
+        "energy_kwh": raw_energy,
+        "energy_kwh_display": display_energy,
+        "unlocked_count": len(get_unlocked_tasks(raw_energy)),
         "simulation": get_simulation_status(),
     }
 
@@ -160,7 +238,11 @@ async def test_set_energy(value: float = Query(..., description="Energy in kWh")
     ensure_sim_mode()
     set_simulated_energy(value)
     ble_state["energy_kwh"] = float(value)
-    return {"message": "Simulated energy updated.", "energy_kwh": ble_state["energy_kwh"]}
+    return {
+        "message": "Simulated energy updated.",
+        "energy_kwh": ble_state["energy_kwh"],
+        "unlocked_count": len(get_unlocked_tasks(float(value))),
+    }
 
 
 @app.post("/test/set-power")

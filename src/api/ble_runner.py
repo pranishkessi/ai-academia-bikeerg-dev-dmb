@@ -52,7 +52,7 @@ MAX_STROKE_INTERVAL = 5.0
 # ===== Simulation tunables =====
 SIM_TICK_SECONDS = float(os.getenv("SIM_TICK_SECONDS", "0.2"))
 SIM_DEFAULT_POWER = float(os.getenv("SIM_DEFAULT_POWER", "160"))
-SIM_DEFAULT_CADENCE = float(os.getenv("SIM_DEFAULT_CADENCE", "60"))
+SIM_DEFAULT_CADENCE = float(os.getenv("SIM_DEFAULT_CADENCE", "90"))
 SIM_PROFILE = os.getenv("SIM_PROFILE", "constant")  # constant | ramp
 SIM_RAMP_MIN_POWER = float(os.getenv("SIM_RAMP_MIN_POWER", "60"))
 SIM_RAMP_MAX_POWER = float(os.getenv("SIM_RAMP_MAX_POWER", "220"))

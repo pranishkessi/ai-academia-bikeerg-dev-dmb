@@ -12,6 +12,7 @@ import {
   CloseButton,
 } from "@chakra-ui/react";
 import DashboardLayout from "./components/DashboardLayout";
+import { AI_TASKS } from "./constants/aiTasks";
 
 function App() {
   const [isRunning, setIsRunning] = useState(false);
@@ -25,14 +26,46 @@ function App() {
   const timeoutRef = useRef(null);
   const toast = useToast();
 
+  const TOTAL_TASKS = AI_TASKS.length;
+
   const dispatchAvatarTempMessage = (text, durationMs = 30000) => {
-    // Broadcast a temporary message for the avatar.
-    // useAvatarMessages.js listens for this event and will revert to Welcome after duration.
     window.dispatchEvent(
       new CustomEvent("avatar:tempMessage", {
         detail: { text, duration: durationMs },
       })
     );
+  };
+
+  const getUnlockedCountFromSnapshot = (snapshot) => {
+    if (!snapshot) return 0;
+
+    if (typeof snapshot.unlocked_count === "number") {
+      return snapshot.unlocked_count;
+    }
+
+    if (Array.isArray(snapshot.tasks_unlocked_details)) {
+      return snapshot.tasks_unlocked_details.length;
+    }
+
+    if (Array.isArray(snapshot.tasks_unlocked)) {
+      return snapshot.tasks_unlocked.length;
+    }
+
+    return 0;
+  };
+
+  const getDisplayEnergyFromSnapshot = (snapshot) => {
+    if (!snapshot) return 0;
+
+    if (typeof snapshot.energy_kwh_display === "number") {
+      return snapshot.energy_kwh_display;
+    }
+
+    if (typeof snapshot.energy_kwh === "number") {
+      return snapshot.energy_kwh;
+    }
+
+    return 0;
   };
 
   const fetchData = async () => {
@@ -63,20 +96,15 @@ function App() {
           setLastSession(d.last_session_snapshot);
           setShowSummary(true);
 
-          // Build the same message you show above the avatar
-          const unlocked =
-            [0.002, 0.004, 0.006, 0.008].filter(
-              (t) => d.last_session_snapshot.energy_kwh >= t
-            ).length;
+          const unlocked = getUnlockedCountFromSnapshot(d.last_session_snapshot);
+          const displayEnergy = getDisplayEnergyFromSnapshot(d.last_session_snapshot);
 
-          const msg = `Session beendet. Energie: ${d.last_session_snapshot.energy_kwh.toFixed(
-            3
-          )} kWh • Aufgaben: ${unlocked} / 4`;
+          const msg = `Session beendet. Energie: ${displayEnergy.toFixed(
+            4
+          )} kWh • Aufgaben: ${unlocked} / ${TOTAL_TASKS}`;
 
-          // Trigger avatar temp message for 30s, then it will auto-revert to Welcome
           dispatchAvatarTempMessage(msg, 30000);
 
-          // Auto-hide the summary after 30s
           clearTimeout(timeoutRef.current);
           timeoutRef.current = setTimeout(() => {
             setShowSummary(false);
@@ -126,7 +154,6 @@ function App() {
       await axios.post("http://127.0.0.1:8080/stop");
       setIsRunning(false);
       setStatus("Inactive");
-      // The avatar temp message + summary timing will be handled in fetchData
     } catch (error) {
       console.error("Error stopping session:", error);
     }
@@ -142,6 +169,9 @@ function App() {
       </ChakraProvider>
     );
   }
+
+  const summaryUnlocked = getUnlockedCountFromSnapshot(lastSession);
+  const summaryEnergy = getDisplayEnergyFromSnapshot(lastSession);
 
   return (
     <ChakraProvider>
@@ -196,13 +226,11 @@ function App() {
                 </Text>
                 <Text>
                   <Box as="span" fontWeight="bold">Energie:</Box>{" "}
-                  {lastSession.energy_kwh.toFixed(4)} kWh
+                  {summaryEnergy.toFixed(4)} kWh
                 </Text>
                 <Text>
                   <Box as="span" fontWeight="bold">KI-Aufgabe Freigeschaltet:</Box>{" "}
-                  {[0.002, 0.004, 0.006, 0.008].filter(
-                    (t) => lastSession.energy_kwh >= t
-                  ).length} / 4
+                  {summaryUnlocked} / {TOTAL_TASKS}
                 </Text>
               </VStack>
             </Box>
