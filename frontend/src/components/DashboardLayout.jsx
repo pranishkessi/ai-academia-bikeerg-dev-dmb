@@ -431,7 +431,7 @@ function DashboardLayout({ metrics, onStart, onStop, sessionActive }) {
         templateColumns="repeat(4, 1fr)"
         gap={3}
         w="100%"
-        bg="#FFF4E8"
+        bg="#f16623"
         py={3}
         px={5}
         borderRadius="xl"
@@ -442,7 +442,7 @@ function DashboardLayout({ metrics, onStart, onStop, sessionActive }) {
         {[
           "/BMFTR_Logo2.png",
           "/INIT_Logo.png",
-          "/KI_Akademie_OWL_Logo.jpg",
+          "/KI_Akademie_OWL_Logo.png",
           "/visual.png",
         ].map((src, idx) => (
           <Box
