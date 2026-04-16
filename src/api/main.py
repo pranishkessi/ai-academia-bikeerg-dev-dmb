@@ -5,6 +5,7 @@ import asyncio
 import json
 import os
 from datetime import datetime
+from pathlib import Path
 
 from src.api.ble_runner import (
     ble_logger,
@@ -28,52 +29,18 @@ os.makedirs(LOG_DIR, exist_ok=True)
 
 SIM_MODE = os.getenv("SIM_MODE", "0") == "1"
 
-# Stage 1 sync improvement:
-# keep one backend task structure instead of parallel arrays
-AI_TASKS = [
-    {
-        "id": "level1",
-        "shortLabel": "Computer eingeschaltet",
-        "label": "Du hast den Computer eingeschaltet",
-        "threshold": 0.0017,
-    },
-    {
-        "id": "level2",
-        "shortLabel": "10 Google-Suchanfragen",
-        "label": "Du hast 10 Suchanfragen bei Google geschafft",
-        "threshold": 0.003,
-    },
-    {
-        "id": "level3",
-        "shortLabel": "1.000 Zeichen übersetzt",
-        "label": "Du hast 1.000 Zeichen Text mit KI übersetzt",
-        "threshold": 0.0045,
-    },
-    {
-        "id": "level4",
-        "shortLabel": "2 ChatGPT-Fragen",
-        "label": "Du hast 2 Fragen an ChatGPT geschafft",
-        "threshold": 0.006,
-    },
-    {
-        "id": "level5",
-        "shortLabel": "Bild mit KI erstellt",
-        "label": "Du hast ein Bild mit KI erstellt",
-        "threshold": 0.01,
-    },
-    {
-        "id": "level6",
-        "shortLabel": "5 Sekunden KI-Video",
-        "label": "Streng Dich an, in einer Stunde hast Du 5 Sekunden Video mit KI erstellt wenn Du konstant mit 100 Watt trittst",
-        "threshold": 0.5,
-    },
-]
+# --- Load shared AI task config ---
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+TASKS_FILE = BASE_DIR / "config" / "ai_tasks.json"
+
+with open(TASKS_FILE, "r", encoding="utf-8") as f:
+    AI_TASKS = json.load(f)
 
 
 def log_session_to_file(snapshot):
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     filename = os.path.join(LOG_DIR, f"session_{timestamp}.json")
-    with open(filename, "w") as f:
+    with open(filename, "w", encoding="utf-8") as f:
         json.dump(snapshot, f, indent=2, ensure_ascii=False)
     print(f"📄 Session saved to {filename}")
 
@@ -88,8 +55,7 @@ def get_unlocked_tasks(raw_energy: float):
 
 
 def get_current_level(raw_energy: float):
-    unlocked = get_unlocked_tasks(raw_energy)
-    return len(unlocked)
+    return len(get_unlocked_tasks(raw_energy))
 
 
 app.add_middleware(
@@ -118,6 +84,11 @@ def read_root():
     }
 
 
+@app.get("/tasks")
+def get_tasks():
+    return AI_TASKS
+
+
 @app.get("/data")
 def get_data():
     session_active = ble_state.get("session_active", False)
@@ -135,15 +106,12 @@ def get_data():
         "stroke_rate": int(ble_state.get("cadence", 0)) if session_active else 0,
         "distance_meters": int(ble_state.get("distance", 0)) if session_active else 0,
         "elapsed_time": int(ble_state.get("elapsed", 0)) if session_active else 0,
-        # raw value for logic
         "energy_kwh": raw_energy,
-        # rounded value for display/debug convenience
         "energy_kwh_display": display_energy,
         "session_active": session_active,
         "connected": ble_state.get("connected", False),
         "last_session_snapshot": last_session_snapshot,
         "sim_mode": SIM_MODE,
-        # Stage 1 backend sync/debug metadata
         "unlocked_count": current_level,
         "current_level": current_level,
         "ai_tasks": AI_TASKS,
@@ -180,6 +148,7 @@ async def stop_session():
         ],
         "unlocked_count": len(unlocked_tasks),
         "current_level": len(unlocked_tasks),
+        "total_tasks": len(AI_TASKS),
         "sim_mode": SIM_MODE,
         "stopped_at": datetime.now().isoformat(),
     })
@@ -204,7 +173,10 @@ async def reset_after_delay():
 
 def ensure_sim_mode():
     if not SIM_MODE:
-        raise HTTPException(status_code=403, detail="Simulation endpoints are disabled in production mode.")
+        raise HTTPException(
+            status_code=403,
+            detail="Simulation endpoints are disabled in production mode.",
+        )
 
 
 @app.get("/test/status")
@@ -219,6 +191,8 @@ def test_status():
         "energy_kwh": raw_energy,
         "energy_kwh_display": display_energy,
         "unlocked_count": len(get_unlocked_tasks(raw_energy)),
+        "current_level": get_current_level(raw_energy),
+        "total_tasks": len(AI_TASKS),
         "simulation": get_simulation_status(),
     }
 
@@ -242,6 +216,8 @@ async def test_set_energy(value: float = Query(..., description="Energy in kWh")
         "message": "Simulated energy updated.",
         "energy_kwh": ble_state["energy_kwh"],
         "unlocked_count": len(get_unlocked_tasks(float(value))),
+        "current_level": get_current_level(float(value)),
+        "total_tasks": len(AI_TASKS),
     }
 
 
